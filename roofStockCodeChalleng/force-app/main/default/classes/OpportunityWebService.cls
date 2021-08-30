@@ -3,7 +3,6 @@ global with sharing class OpportunityWebService {
 
     @HttpPatch
     global static void doPatch() { 
-        system.debug('**********************************************START*****************************');
         List<String> response = new List<String>();
         RestRequest req = RestContext.request;
         RestResponse res = RestContext.response;
@@ -25,23 +24,19 @@ global with sharing class OpportunityWebService {
             return;
         }
         // call generatePidMap to create two maps: 1. pIds & corresponding Emails, 2. pids and corresponding Phone #s
-        system.debug('generatePidMaps');
         List<Map<Integer, String>> pidMapList = OpportunityWebServiceHelper.generatePidMap(parsedReqList);
         Map<Integer, String> pidEmailMap = pidMapList[0];
         Map<Integer, String> pidPhoneMap = pidMapList[1];
         String requestContext = initializationMap.get(Utils.context);
-        system.debug('context ' + requestContext);
         Switch on requestContext {
             // when all elements in the request contain an email address, the requestContext = 'Email'
             when 'Email' {
                 List<Contact> cons = OpportunityWebServiceHelper.queryContacts(Utils.emailContext, pidEmailMap.keySet(), pidEmailMap.values());    
                 If(cons.isEmpty()) {
-                    system.debug('inside');
                     // create an Acct, Con, & Opp for each request. Add to response a List of Strings, i.e. {"pid":x,"opportunityId":"y"},{"pi.... 
                     response = OpportunityWebServiceHelper.handleCreateAllRequests(parsedReqList);
                     
                 } else {
-                    system.debug('inside');
                     // some records were found - processData handles the rest, returning pIds and corresponding oppIds
                     response.addAll(OpportunityWebServiceHelper.processData(cons, requestContext, pidEmailMap, parsedReqList)); 
                 }
@@ -53,11 +48,9 @@ global with sharing class OpportunityWebService {
             when 'Phone' {
                 List<Contact> cons = OpportunityWebServiceHelper.queryContacts(Utils.phoneContext, pidPhoneMap.keySet(), pidPhoneMap.values());
                 if(cons.isEmpty()) {
-                    system.debug('inside');
                     // create an Acct, Con, & Opp for each request. Add to response a List of Strings, i.e. {"pid":x,"opportunityId":"y"},{"pi.... 
                     response = OpportunityWebServiceHelper.handleCreateAllRequests(parsedReqList);
                 } else {
-                    system.debug('inside');
                     // some records were found - processData handles the rest, returning pIds and corresponding oppIds
                     response.addAll(OpportunityWebServiceHelper.processData(cons, requestContext, pidPhoneMap, parsedReqList)); 
                 }
@@ -70,20 +63,15 @@ global with sharing class OpportunityWebService {
                 List<Contact> consByEmail  = OpportunityWebServiceHelper.queryContacts(Utils.emailContext, pidEmailMap.keySet(), pidEmailMap.values());    
                 List<Contact> consByPhone = OpportunityWebServiceHelper.queryContacts(Utils.phoneContext, pidPhoneMap.keySet(), pidPhoneMap.values());
                 if(consByEmail.isEmpty()) {
-                    system.debug('inside');
                     // create an Acct, Con, & Opp for each request. Add to response a List of Strings, i.e. {"pid":x,"opportunityId":"y"},{"pi.... 
                     response.addAll(OpportunityWebServiceHelper.handleCreateAllRequests(parse(initializationMap.get(Utils.emailRequests))));
                 } else {
-                    system.debug('inside');
                     response.addAll(OpportunityWebServiceHelper.processData(consByEmail, Utils.emailContext, pidEmailMap, parse(initializationMap.get(Utils.emailRequests))));
-                    system.debug(response);
                 }
                 if(consByPhone.isEmpty()) {
-                    system.debug('inside');
                     // create an Acct, Con, & Opp for each request. Add to response a List of Strings, i.e. {"pid":x,"opportunityId":"y"},{"pi.... 
                     response.addAll(OpportunityWebServiceHelper.handleCreateAllRequests(parse(initializationMap.get(Utils.phoneRequests))));
                 } else {
-                    system.debug('inside');
                     response.addAll(OpportunityWebServiceHelper.processData(consByPhone, Utils.phoneContext, pidPhoneMap, parse(initializationMap.get(Utils.phoneRequests))));
                 }
                 String resString = String.join(response, ',');
